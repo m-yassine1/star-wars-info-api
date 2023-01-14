@@ -1,0 +1,115 @@
+<html lang="en">
+<head>
+    <title>Star Wars Trivia</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="columns">
+            <div class="column is-half">
+                <form id="trivia">
+                    <div class="field">
+                        <label class="label" for="name">Character:</label>
+                        <div class="control">
+                            <input class="input" name="name" id="name" type="text" placeholder="Name">
+                        </div>
+                        <p class="help is-danger is-hidden" id="helpMessage">Name is required</p>
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <button type="submit" class="button is-link" id="submit">Submit</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <h3 class="is-size-3">Result</h3>
+        <div id="output">
+            <div id="error" class="is-size-3 has-text-danger is-hidden">Something went wrong</div>
+            <div id="result"></div>
+        </div>
+
+    </div>
+    <script>
+        $("#trivia").submit(function(event) {
+            event.preventDefault();
+            const input = $("input").first();
+            const helpMessage = $("#helpMessage");
+            const submitButton = $("#submit");
+            const errorMessage = $("#error");
+            errorMessage.addClass("is-hidden");
+
+            if (input.val() === "" ) {
+                input.addClass("is-danger");
+                helpMessage.removeClass("is-hidden");
+                return;
+            }
+
+            input.removeClass("is-danger");
+            helpMessage.addClass("is-hidden");
+            submitButton.addClass("is-loading");
+            submitButton.prop("disabled", true);
+
+            $.ajax({
+                method: "POST",
+                url: "/graphql",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    query: `query {\n  filmsAndVehiclesByName(name: "${input.val()}") {\n    name\n    vehicles\n    films\n  }\n}`
+                }),
+                success: function(result) {
+                    submitButton.prop("disabled", false);
+                    submitButton.removeClass("is-loading");
+                    buildTable(result.data);
+                },
+                failure: function (result) {
+                    errorMessage.removeClass("is-hidden");
+                    submitButton.prop("disabled", false);
+                    submitButton.removeClass("is-loading");
+                    $("#result").html("");
+                }
+            });
+        });
+
+        function buildTable(data) {
+            const resultList = data["filmsAndVehiclesByName"];
+            let elementToAdd = "";
+            for(let i = 0; i < resultList.length; i++) {
+                const name = resultList[i]["name"];
+                const vehicles = resultList[i]["vehicles"];
+                const films = resultList[i]["films"];
+                elementToAdd += `<div>`;
+                elementToAdd += `<h5 class="is-size-5">${name}</h5>`;
+                elementToAdd += `<div class="columns">`;
+                elementToAdd += `<div class="column is-half">`;
+                elementToAdd += `<table class="table">`;
+                elementToAdd += `<thead><tr><th>Vehicles</th></tr></thead>`;
+                elementToAdd += `<tbody>`;
+                for(let j = 0; j < vehicles.length; j++) {
+                    elementToAdd += `<tr><td>${vehicles[j]}</td></tr>`;
+                }
+                elementToAdd += `</tbody>`;
+                elementToAdd += `</table>`;
+                elementToAdd += `</div>`;
+                elementToAdd += `<div class="column is-half">`;
+                elementToAdd += `<table class="table">`;
+                elementToAdd += `<thead><tr><th>Films</th></tr></thead>`;
+                elementToAdd += `<tbody>`;
+                for(let j = 0; j < films.length; j++) {
+                    elementToAdd += `<tr><td>${films[j]}</td></tr>`;
+                }
+                elementToAdd += `</tbody>`;
+                elementToAdd += `</table>`;
+                elementToAdd += `</div>`;
+                elementToAdd += `</div>`;
+                elementToAdd += `</div>`;
+            }
+            $("#result").html("");
+            $("#result").html(elementToAdd);
+        }
+    </script>
+</body>
+</html>

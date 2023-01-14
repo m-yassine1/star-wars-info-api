@@ -1,0 +1,9 @@
+type Query {
+    filmsAndVehiclesByName(name: String!): [StarWarsCharacterInfo]
+}
+
+type StarWarsCharacterInfo {
+    name: ID!
+    films: [String]
+    vehicles: [String]
+}
